@@ -56,10 +56,9 @@ def zero_pad(image, pad_height, pad_width):
     """
 
     H, W = image.shape
-    out = np.zeros_like(image)
 
     ### YOUR CODE HERE
-    pass
+    out = np.pad(image, ((pad_height, pad_height), (pad_width, pad_width)), "constant", constant_values=(0,0))
     ### END YOUR CODE
     return out
 

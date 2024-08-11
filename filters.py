@@ -20,22 +20,29 @@ def conv_nested(image, kernel):
     out = np.zeros((Hi, Wi))
 
     ### YOUR CODE HERE
+    pad_w = (Wk - 1) // 2
+    pad_h = (Hk - 1) // 2
+    padded_img = zero_pad(image, pad_h, pad_w)
+    Hi, Wi = padded_img.shape
+
     kernel = np.flipud(kernel)
     kernel = np.fliplr(kernel)
-    start_i = 0
-    start_j = 0
-    finish_i = Hi - Hk
-    finish_j = Wi - Wk
+    start_i = pad_w
+    start_j = pad_h
+    finish_i = Hi - 2 * pad_w
+    finish_j = Wi - 2 * pad_h
     for i in range(start_i, finish_i):
         for j in range(start_j, finish_j):
+            curr_matr = padded_img[i - 1:i + 2, j - 1:j + 2]
             ker_sum = 0
             for k in range(Hk):
                 for n in range(Wk):
-                    ker_sum += image[i + k][j + n] * kernel[k][n]
-            out[i + 1, j + 1] = ker_sum
-    ### END YOUR CODE
+                    ker_sum += curr_matr[k][n] * kernel[k][n]
+            out[i - pad_w, j - pad_h] = ker_sum
+    ## END YOUR CODE
 
     return out
+
 
 def zero_pad(image, pad_height, pad_width):
     """ Zero-pad an image.

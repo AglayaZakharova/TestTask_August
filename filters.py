@@ -94,7 +94,19 @@ def conv_fast(image, kernel):
     out = np.zeros((Hi, Wi))
 
     ### YOUR CODE HERE
-    pass
+    pad_w = (Wk - 1) // 2
+    pad_h = (Hk - 1) // 2
+    padded_img = zero_pad(image, pad_h, pad_w)
+    Hi, Wi = padded_img.shape
+    kernel = np.flipud(kernel)
+    kernel = np.fliplr(kernel)
+    
+    sub_shape = (Hk, Wk)
+    view_shape = tuple(np.subtract(padded_img.shape, sub_shape) + 1) + sub_shape
+    strides = padded_img.strides + padded_img.strides
+    submatrices = np.lib.stride_tricks.as_strided(padded_img, view_shape, strides)
+
+    out = np.einsum('ij,klij->kl', kernel, submatrices)
     ### END YOUR CODE
 
     return out

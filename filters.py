@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import signal
 
 
 def conv_nested(image, kernel):
@@ -111,7 +112,7 @@ def conv_fast(image, kernel):
 
     return out
 
-def conv_faster(image, kernel):
+def conv_faster(image, kernel): # Незаметно на маленьких kernel, но если kernel становится по размеру сравним с самим изображением, то разница с fast значительна.
     """
     Args:
         image: numpy array of shape (Hi, Wi).
@@ -125,7 +126,7 @@ def conv_faster(image, kernel):
     out = np.zeros((Hi, Wi))
 
     ### YOUR CODE HERE
-    pass
+    out = signal.fftconvolve(image, kernel, mode = 'same')
     ### END YOUR CODE
 
     return out
@@ -143,10 +144,18 @@ def cross_correlation(f, g):
         out: numpy array of shape (Hf, Wf).
     """
 
-    out = np.zeros_like(f)
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    Hi, Wi = f.shape
+    Hk, Wk = g.shape
+
+    Hf = Hi - Hk + 1
+    Wf = Wi - Wk + 1
+    out = np.zeros((Hf, Wf))
+
+    for i in range(Hf):
+        for j in range(Wf):
+            sub = f[i:i + Hk, j:j + Wk]
+
+            out[i, j] = np.sum(sub * g)
 
     return out
 
@@ -165,10 +174,24 @@ def zero_mean_cross_correlation(f, g):
         out: numpy array of shape (Hf, Wf).
     """
 
-    out = np.zeros_like(f)
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    mean1 = np.mean(f)
+    mean2 = np.mean(g)
+
+    f_centered = f - mean1
+    g_centered = g - mean2
+
+    Hi, Wi = f_centered.shape
+    Hk, Wk = g_centered.shape
+
+    Hf = Hi - Hk + 1
+    Wf = Wi - Wk + 1
+    out = np.zeros((Hf, Wf))
+
+    for i in range(Hf):
+        for j in range(Wf):
+            sub = f_centered[i:i + Hk, j:j + Wk]
+
+            out[i, j] = np.sum(sub * g_centered)
 
     return out
 
@@ -189,9 +212,28 @@ def normalized_cross_correlation(f, g):
         out: numpy array of shape (Hf, Wf).
     """
 
-    out = np.zeros_like(f)
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    mean1 = np.mean(f)
+    mean2 = np.mean(g)
+
+    f_centered = f - mean1
+    g_centered = g - mean2
+
+    Hi, Wi = f_centered.shape
+    Hk, Wk = g_centered.shape
+
+    Hf = Hi - Hk + 1
+    Wf = Wi - Wk + 1
+    out = np.zeros((Hf, Wf))
+
+    norm1 = np.linalg.norm(f_centered)
+    norm2 = np.linalg.norm(g_centered)
+
+    for i in range(Hf):
+        for j in range(Wf):
+            sub = f_centered[i:i + Hk, j:j + Wk]
+
+            out[i, j] = np.sum(sub * g_centered)
+
+            out[i, j] /= (norm1 * norm2) # Нормализация
 
     return out

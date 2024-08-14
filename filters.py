@@ -21,25 +21,21 @@ def conv_nested(image, kernel):
     out = np.zeros((Hi, Wi))
 
     ### YOUR CODE HERE
-    pad_w = (Wk - 1) // 2
-    pad_h = (Hk - 1) // 2
-    padded_img = zero_pad(image, pad_h, pad_w)
-    Hi, Wi = padded_img.shape
-
     kernel = np.flipud(kernel)
     kernel = np.fliplr(kernel)
+    pad_w = Wk // 2
+    pad_h = Hk // 2
+    padded_img = zero_pad(image, pad_h, pad_w)
+
     start_i = pad_w
     start_j = pad_h
-    finish_i = Hi - 2 * pad_w
-    finish_j = Wi - 2 * pad_h
-    for i in range(start_i, finish_i):
-        for j in range(start_j, finish_j):
-            curr_matr = padded_img[i - 1:i + 2, j - 1:j + 2]
-            ker_sum = 0
+    finish_i = pad_w + Hi
+    finish_j = pad_h + Wi
+    for i in range(Hi):
+        for j in range(Wi):
             for k in range(Hk):
                 for n in range(Wk):
-                    ker_sum += curr_matr[k][n] * kernel[k][n]
-            out[i - pad_w, j - pad_h] = ker_sum
+                    out[i, j] += padded_img[i + k, j + n] * kernel[k, n]
     ## END YOUR CODE
 
     return out
@@ -71,7 +67,7 @@ def zero_pad(image, pad_height, pad_width):
     return out
 
 
-def conv_fast(image, kernel):
+def conv_fast(image, kernel): # Я попробовала вообще без циклов сделать, через np.einsum.
     """ An efficient implementation of convolution filter.
 
     This function uses element-wise multiplication and np.sum()
@@ -112,6 +108,7 @@ def conv_fast(image, kernel):
 
     return out
 
+
 def conv_faster(image, kernel): # Незаметно на маленьких kernel, но если kernel становится по размеру сравним с самим изображением, то разница с fast значительна.
     """
     Args:
@@ -131,7 +128,10 @@ def conv_faster(image, kernel): # Незаметно на маленьких ker
 
     return out
 
-def cross_correlation(f, g):
+
+# Я создала изображения shelf1, shelf2 и shelf3 (вариации изображения shelf) для удобного тестирования.
+# Они в папке img.
+def cross_correlation(f, g): # Почему-то все-таки промахивается мимо нужного места. Причем, если ее дополнить нулевым средним, то все становится хорошо.
     """ Cross-correlation of f and g.
 
     Hint: use the conv_fast function defined above.
@@ -144,6 +144,7 @@ def cross_correlation(f, g):
         out: numpy array of shape (Hf, Wf).
     """
 
+    ### YOUR CODE HERE
     Hi, Wi = f.shape
     Hk, Wk = g.shape
 
@@ -156,8 +157,54 @@ def cross_correlation(f, g):
             sub = f[i:i + Hk, j:j + Wk]
 
             out[i, j] = np.sum(sub * g)
+    ### END YOUR CODE
 
     return out
+
+# А эта моя изначальная функция, которая похожа на свертку, только без переворачивания kernel.
+# Она выдает тот же результат, что и scipy.signal.correlate2d с mode="same", но он какой-то странный, не работает на изображении.
+# Я не очень поняла, что все-таки неправильно, но решила сделать с нуля через циклы (это вот то, что выше).
+# def cross_correlation(image, kernel):
+#     """ An efficient implementation of convolution filter.
+
+#     This function uses element-wise multiplication and np.sum()
+#     to efficiently compute weighted sum of neighborhood at each
+#     pixel.
+
+#     Hints:
+#         - Use the zero_pad function you implemented above
+#         - There should be two nested for-loops
+#         - You may find np.flip() and np.sum() useful
+
+#     Args:
+#         image: numpy array of shape (Hi, Wi).
+#         kernel: numpy array of shape (Hk, Wk).
+
+#     Returns:
+#         out: numpy array of shape (Hi, Wi).
+#     """
+#     Hi, Wi = image.shape
+#     Hk, Wk = kernel.shape
+#     Hf = Hk + Hk - 1
+#     Wf = Wi + Wk - 1 
+#     out = np.zeros((Hf, Wf))
+
+#     ### YOUR CODE HERE
+#     pad_w = (Wk - 1) // 2
+#     pad_h = (Hk - 1) // 2
+#     padded_img = zero_pad(image, pad_h, pad_w)
+#     Hi, Wi = padded_img.shape
+    
+#     sub_shape = (Hk, Wk)
+#     view_shape = tuple(np.subtract(padded_img.shape, sub_shape) + 1) + sub_shape
+#     strides = padded_img.strides + padded_img.strides
+#     submatrices = np.lib.stride_tricks.as_strided(padded_img, view_shape, strides)
+
+#     out = np.einsum('kl,ijkl->ij', kernel, submatrices)
+#     ### END YOUR CODE
+
+#     return out
+
 
 def zero_mean_cross_correlation(f, g):
     """ Zero-mean cross-correlation of f and g.
@@ -174,6 +221,7 @@ def zero_mean_cross_correlation(f, g):
         out: numpy array of shape (Hf, Wf).
     """
 
+    ### YOUR CODE HERE
     mean1 = np.mean(f)
     mean2 = np.mean(g)
 
@@ -192,6 +240,7 @@ def zero_mean_cross_correlation(f, g):
             sub = f_centered[i:i + Hk, j:j + Wk]
 
             out[i, j] = np.sum(sub * g_centered)
+    ### END YOUR CODE
 
     return out
 
@@ -212,28 +261,27 @@ def normalized_cross_correlation(f, g):
         out: numpy array of shape (Hf, Wf).
     """
 
-    mean1 = np.mean(f)
-    mean2 = np.mean(g)
-
-    f_centered = f - mean1
-    g_centered = g - mean2
-
-    Hi, Wi = f_centered.shape
-    Hk, Wk = g_centered.shape
+    ### YOUR CODE HERE
+    Hi, Wi = f.shape
+    Hk, Wk = g.shape
 
     Hf = Hi - Hk + 1
     Wf = Wi - Wk + 1
     out = np.zeros((Hf, Wf))
 
-    norm1 = np.linalg.norm(f_centered)
-    norm2 = np.linalg.norm(g_centered)
+    mean1 = np.mean(f) # Среднее
+    mean2 = np.mean(g)
+
+    std1 = np.std(f) # Стандартное отклонение
+    std2 = np.std(g)
 
     for i in range(Hf):
         for j in range(Wf):
-            sub = f_centered[i:i + Hk, j:j + Wk]
+            sub = f[i:i + Hk, j:j + Wk]
 
-            out[i, j] = np.sum(sub * g_centered)
+            out[i, j] = np.sum((sub - mean1) * (g - mean2))
 
-            out[i, j] /= (norm1 * norm2) # Нормализация
+            out[i, j] /= (std1 * std2) # Нормализация
+    ### END YOUR CODE
 
     return out
